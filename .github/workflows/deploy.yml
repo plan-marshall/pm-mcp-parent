@@ -71,7 +71,25 @@ jobs:
           ./mvnw -B --no-transfer-progress help:effective-pom -Doutput=target/effective-pom.xml
           sed -n '/<distributionManagement>/,/<\/distributionManagement>/p' target/effective-pom.xml
 
+      # A run that deployed and then failed to push the tag leaves a published version without its tag. The
+      # registry refuses a second deploy of that version, so a retry skips the deploy and only tags.
+      - name: Look for the version in the registry
+        id: published
+        env:
+          RELEASE_VERSION: ${{ inputs.release-version }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          url="https://maven.pkg.github.com/${GITHUB_REPOSITORY}/de/planmarshall/pm-mcp-parent/${RELEASE_VERSION}/pm-mcp-parent-${RELEASE_VERSION}.pom"
+          status=$(curl -s -L -o /dev/null -w '%{http_code}' -u "${GITHUB_ACTOR}:${GITHUB_TOKEN}" "$url")
+          echo "registry answers $status for $RELEASE_VERSION"
+          case "$status" in
+            200) echo "exists=true" >> "$GITHUB_OUTPUT"; echo "::notice::$RELEASE_VERSION is published already; only the tag is pushed" ;;
+            404) echo "exists=false" >> "$GITHUB_OUTPUT" ;;
+            *) echo "::error::unexpected answer $status from the registry"; exit 1 ;;
+          esac
+
       - name: Deploy
+        if: ${{ steps.published.outputs.exists != 'true' }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: ./mvnw -B --no-transfer-progress deploy

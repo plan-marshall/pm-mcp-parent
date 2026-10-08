@@ -40,7 +40,9 @@ Only this parent is released; the modules of the product are deployed as `SNAPSH
    `1.0.0`. It sets that version in the workspace, prints the effective `distributionManagement`, deploys the POM to
    `https://maven.pkg.github.com/plan-marshall/pm-mcp-parent`, and pushes the tag of the same name with the released
    POM.
-3. The registry accepts a release version once. To correct a release, release the next version.
+3. The registry accepts a release version once. To correct a release, release the next version. If a run deployed
+   but failed to push the tag, start it again with the same version: it finds the version in the registry, skips
+   the deploy, and pushes the tag.
 4. Raise the parent version in the consuming repositories.
 
 The workflow receives no credential but the `GITHUB_TOKEN` of its run. It is a plain workflow of this repository until
