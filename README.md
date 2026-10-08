@@ -46,4 +46,4 @@ Only this parent is released; the modules of the product are deployed as `SNAPSH
 4. Raise the parent version in the consuming repositories.
 
 The workflow receives no credential but the `GITHUB_TOKEN` of its run. It is a plain workflow of this repository until
-the reusable release workflow of `cuioss/cuioss-organization` offers a GitHub Packages mode.
+the reusable release workflow of `cuioss/cuioss-organization` can release in another organisation.

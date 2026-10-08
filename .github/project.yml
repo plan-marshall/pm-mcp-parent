@@ -3,8 +3,8 @@ name: pm-mcp-parent
 description: Parent POM of every module of plan-marshall-mcp
 
 # The parent is released to the GitHub Packages registry of the organisation plan-marshall and nowhere else,
-# by .github/workflows/deploy.yml. The reusable snapshot deploy and release of cuioss-organization publish to
-# Maven Central only and stay switched off; no GitHub release and no Pages deploy.
+# by .github/workflows/deploy.yml. The parent has no snapshot deploy, and the reusable release of
+# cuioss-organization cannot run in this organisation; no GitHub release and no Pages deploy.
 release:
   current-version: 0.1.0
   next-version: 0.1.1-SNAPSHOT
