@@ -1,0 +1,88 @@
+# Releases the parent POM to the GitHub Packages Maven registry of the organisation plan-marshall.
+#
+# A plain workflow of this repository: the reusable release workflow of cuioss-organization v0.37.0 publishes
+# to Maven Central only. It receives no credential but the GITHUB_TOKEN of the run. It is replaced by the
+# reusable workflow once that offers a GitHub Packages mode.
+#
+# The registry accepts a release version once; a second run with the same version fails with 409.
+name: Release to GitHub Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-version:
+        description: 'Version to release, e.g. 1.0.0 (no -SNAPSHOT)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: ${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write   # pushes the release tag
+      packages: write   # deploys to the registry
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          server-id: plan-marshall
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+          cache: maven
+
+      - name: Check the version
+        env:
+          RELEASE_VERSION: ${{ inputs.release-version }}
+        run: |
+          if ! [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$RELEASE_VERSION' is not a release version of the form 1.2.3"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$RELEASE_VERSION" >/dev/null; then
+            echo "::error::tag $RELEASE_VERSION exists already"
+            exit 1
+          fi
+
+      - name: Set the release version
+        env:
+          RELEASE_VERSION: ${{ inputs.release-version }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./mvnw -B --no-transfer-progress versions:set -DnewVersion="$RELEASE_VERSION" -DgenerateBackupPoms=false
+
+      - name: Show the deployment target
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          ./mvnw -B --no-transfer-progress help:effective-pom -Doutput=target/effective-pom.xml
+          sed -n '/<distributionManagement>/,/<\/distributionManagement>/p' target/effective-pom.xml
+
+      - name: Deploy
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./mvnw -B --no-transfer-progress deploy
+
+      - name: Tag the release
+        env:
+          RELEASE_VERSION: ${{ inputs.release-version }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -q -am "release: $RELEASE_VERSION"
+          git tag "$RELEASE_VERSION"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "refs/tags/$RELEASE_VERSION"

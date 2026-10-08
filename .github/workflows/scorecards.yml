@@ -1,0 +1,24 @@
+# Calls reusable scorecards workflow from cuioss-organization
+name: Scorecard supply-chain security
+
+on:
+  branch_protection_rule:
+  schedule:
+    - cron: '20 7 * * 2'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  analysis:
+    uses: cuioss/cuioss-organization/.github/workflows/reusable-scorecards.yml@bf0f1305123c16521d9fdcf2a9474e3cdb981caa # v0.37.0
+    permissions:
+      security-events: write
+      id-token: write
+      contents: read
+      actions: read
+      issues: read
+      pull-requests: read
+      checks: read

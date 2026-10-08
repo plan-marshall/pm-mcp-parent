@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/cuioss/cuioss-organization/main/.github/actions/read-project-config/schema.json
+name: pm-mcp-parent
+description: Parent POM of every module of plan-marshall-mcp
+
+# The parent is released to the GitHub Packages registry of the organisation plan-marshall and nowhere else,
+# by .github/workflows/deploy.yml. The reusable snapshot deploy and release of cuioss-organization publish to
+# Maven Central only and stay switched off; no GitHub release and no Pages deploy.
+release:
+  current-version: 1.0.0
+  next-version: 1.0.1-SNAPSHOT
+  create-github-release: false
+
+maven-build:
+  java-versions: '["25","26"]'
+  java-version: '25'
+  enable-snapshot-deploy: false
+  npm-cache: false
+
+# A POM without code: nothing to analyse.
+sonar:
+  enabled: false
+
+pages:
+  reference: pm-mcp-parent
+  deploy-at-release: false
+
+github-automation:
+  auto-merge-build-versions: true
+
+cuioss-review-bot:
+  enabled: true
+  packs: [java]
+  additional_rules: []
