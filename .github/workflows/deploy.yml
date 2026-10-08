@@ -1,8 +1,8 @@
 # Releases the parent POM to the GitHub Packages Maven registry of the organisation plan-marshall.
 #
-# A plain workflow of this repository: the reusable release workflow of cuioss-organization v0.37.0 publishes
-# to Maven Central only. It receives no credential but the GITHUB_TOKEN of the run. It is replaced by the
-# reusable workflow once that offers a GitHub Packages mode.
+# A plain workflow of this repository: the reusable release workflow of cuioss-organization mints its token for
+# the organisation cuioss and cannot run here. It receives no credential but the GITHUB_TOKEN of the run. It is
+# replaced by the reusable workflow once that can release in another organisation.
 #
 # The registry accepts a release version once; a second run with the same version fails with 409.
 name: Release to GitHub Packages
