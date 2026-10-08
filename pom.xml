@@ -9,7 +9,7 @@
     </parent>
     <groupId>de.planmarshall</groupId>
     <artifactId>pm-mcp-parent</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <!-- Must be declared: <inceptionYear> is inherited, and the license plugin binds the
          copyright ${year} to it. Without this, a project reports cui-parent-pom's 2022
@@ -63,6 +63,24 @@
             <url>file://${maven.multiModuleProjectDirectory}/target/site-deploy</url>
         </site>
     </distributionManagement>
+
+    <!-- No repository but Maven Central and the organisation registry (which .mvn/settings.xml names, since this
+         POM itself comes from it). cui-parent-pom declares the Sonatype snapshot repository for the snapshots of
+         the cui libraries; it is switched off here for every module of every repository, so that no public
+         repository is asked for a SNAPSHOT of the product. Only the id counts for the override. -->
+    <repositories>
+        <repository>
+            <id>sonatype-snapshots</id>
+            <name>Switched off: Sonatype snapshots</name>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+            <releases>
+                <enabled>false</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
     <properties>
         <!-- Read by cui-parent-pom's compiler <release> and by both javadoc configurations of
@@ -287,6 +305,56 @@
                                     <message>skipPublishing must be true: nothing is published to Maven Central.</message>
                                     <regexMessage>skipPublishing must be true: nothing is published to Maven Central.</regexMessage>
                                 </requireProperty>
+                            </rules>
+                        </configuration>
+                    </execution>
+                    <!-- The coordinates of the product come from the organisation registry: the build fails when
+                         the registry is not listed before Maven Central in .mvn/settings.xml (an artifact of the
+                         product must be found there before any public repository is asked), when the group id
+                         filter of the registry is missing or allows another group, or when .mvn/maven.config does
+                         not switch the filter on. What this does not guarantee: Maven Central is still asked for
+                         a coordinate of the product that the registry does not have. -->
+                    <execution>
+                        <id>product-coordinates-from-the-organisation-registry</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireFilesExist>
+                                    <files>
+                                        <file>${maven.multiModuleProjectDirectory}/.mvn/settings.xml</file>
+                                        <file>${maven.multiModuleProjectDirectory}/.mvn/maven.config</file>
+                                        <file>${maven.multiModuleProjectDirectory}/.mvn/rrf/groupId-plan-marshall.txt</file>
+                                    </files>
+                                    <message>The repository needs .mvn/settings.xml, .mvn/maven.config and .mvn/rrf/groupId-plan-marshall.txt as pm-mcp-parent has them.</message>
+                                </requireFilesExist>
+                                <evaluateBeanshell>
+                                    <condition><![CDATA[
+                                        String settings = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("${maven.multiModuleProjectDirectory}", new String[] {".mvn", "settings.xml"})), "UTF-8");
+                                        int registry = settings.indexOf("<id>plan-marshall</id>", settings.indexOf("<repositories>"));
+                                        int central = settings.indexOf("<id>central</id>", settings.indexOf("<repositories>"));
+                                        settings.indexOf("<repositories>") >= 0 && registry >= 0 && (central < 0 || registry < central)
+                                    ]]></condition>
+                                    <message>.mvn/settings.xml must list the repository plan-marshall before central.</message>
+                                </evaluateBeanshell>
+                                <evaluateBeanshell>
+                                    <condition><![CDATA[
+                                        java.util.List lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get("${maven.multiModuleProjectDirectory}", new String[] {".mvn", "rrf", "groupId-plan-marshall.txt"}), java.nio.charset.StandardCharsets.UTF_8);
+                                        java.util.List groups = new java.util.ArrayList();
+                                        for (int i = 0; i < lines.size(); i++) { String line = ((String) lines.get(i)).trim(); if (line.length() > 0 && !line.startsWith("#")) { groups.add(line); } }
+                                        groups.size() == 1 && groups.get(0).equals("de.planmarshall")
+                                    ]]></condition>
+                                    <message>.mvn/rrf/groupId-plan-marshall.txt must allow the group de.planmarshall and nothing else.</message>
+                                </evaluateBeanshell>
+                                <evaluateBeanshell>
+                                    <condition><![CDATA[
+                                        String config = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("${maven.multiModuleProjectDirectory}", new String[] {".mvn", "maven.config"})), "UTF-8");
+                                        config.contains("-Daether.remoteRepositoryFilter.groupId=true") && config.contains("-Daether.remoteRepositoryFilter.groupId.basedir=") && config.contains("/.mvn/rrf")
+                                    ]]></condition>
+                                    <message>.mvn/maven.config must switch the group id filter on and point it at .mvn/rrf.</message>
+                                </evaluateBeanshell>
                             </rules>
                         </configuration>
                     </execution>
