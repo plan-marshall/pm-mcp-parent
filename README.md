@@ -16,7 +16,7 @@ the organisation and nowhere else.
 <parent>
     <groupId>de.planmarshall</groupId>
     <artifactId>pm-mcp-parent</artifactId>
-    <version>1.0.0</version>
+    <version>0.1.0</version>
     <relativePath />
 </parent>
 
@@ -30,3 +30,20 @@ The consuming repository commits `.mvn/settings.xml` and `.mvn/maven.config` as 
 `src/license/header.txt` for the licence header of the `pre-commit` profile. A machine that builds needs a token for
 the registry; the setup is described in the developer documentation of plan-marshall-mcp
 (`doc/developer/registry-setup.adoc`).
+
+## Releasing
+
+Only this parent is released; the modules of the product are deployed as `SNAPSHOT` versions.
+
+1. Make sure `main` is green and holds the POM to release. Its version stays a `SNAPSHOT`.
+2. Start the workflow *Release to GitHub Packages* (`deploy.yml`) on `main` with the release version, for example
+   `0.1.0`. It sets that version in the workspace, prints the effective `distributionManagement`, deploys the POM to
+   `https://maven.pkg.github.com/plan-marshall/pm-mcp-parent`, and pushes the tag of the same name with the released
+   POM.
+3. The registry accepts a release version once. To correct a release, release the next version. If a run deployed
+   but failed to push the tag, start it again with the same version: it finds the version in the registry, skips
+   the deploy, and pushes the tag.
+4. Raise the parent version in the consuming repositories.
+
+The workflow receives no credential but the `GITHUB_TOKEN` of its run. It is a plain workflow of this repository until
+the reusable release workflow of `cuioss/cuioss-organization` offers a GitHub Packages mode.
