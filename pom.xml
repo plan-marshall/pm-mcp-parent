@@ -327,15 +327,18 @@
                                         <file>${maven.multiModuleProjectDirectory}/.mvn/settings.xml</file>
                                         <file>${maven.multiModuleProjectDirectory}/.mvn/maven.config</file>
                                         <file>${maven.multiModuleProjectDirectory}/.mvn/rrf/groupId-plan-marshall.txt</file>
+                                        <file>${maven.multiModuleProjectDirectory}/.mvn/rrf/groupId-sonatype-snapshots.txt</file>
                                     </files>
-                                    <message>The repository needs .mvn/settings.xml, .mvn/maven.config and .mvn/rrf/groupId-plan-marshall.txt as pm-mcp-parent has them.</message>
+                                    <message>The repository needs .mvn/settings.xml, .mvn/maven.config and the two filter files of .mvn/rrf as pm-mcp-parent has them.</message>
                                 </requireFilesExist>
+                                <!-- Comments are removed first: an id inside a comment must not decide the order -->
                                 <evaluateBeanshell>
                                     <condition><![CDATA[
-                                        String settings = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("${maven.multiModuleProjectDirectory}", new String[] {".mvn", "settings.xml"})), "UTF-8");
-                                        int registry = settings.indexOf("<id>plan-marshall</id>", settings.indexOf("<repositories>"));
-                                        int central = settings.indexOf("<id>central</id>", settings.indexOf("<repositories>"));
-                                        settings.indexOf("<repositories>") >= 0 && registry >= 0 && (central < 0 || registry < central)
+                                        String settings = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("${maven.multiModuleProjectDirectory}", new String[] {".mvn", "settings.xml"})), "UTF-8").replaceAll("(?s)<!--.*?-->", "");
+                                        int repositories = settings.indexOf("<repositories>");
+                                        int registry = settings.indexOf("<id>plan-marshall</id>", repositories);
+                                        int central = settings.indexOf("<id>central</id>", repositories);
+                                        repositories >= 0 && registry >= 0 && (central < 0 || registry < central)
                                     ]]></condition>
                                     <message>.mvn/settings.xml must list the repository plan-marshall before central.</message>
                                 </evaluateBeanshell>
@@ -348,12 +351,27 @@
                                     ]]></condition>
                                     <message>.mvn/rrf/groupId-plan-marshall.txt must allow the group de.planmarshall and nothing else.</message>
                                 </evaluateBeanshell>
+                                <!-- Without this file the filter abstains for the snapshot repository of the cui parent, which
+                                     Maven asks while it builds the model of a cui POM that declares it -->
                                 <evaluateBeanshell>
                                     <condition><![CDATA[
-                                        String config = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("${maven.multiModuleProjectDirectory}", new String[] {".mvn", "maven.config"})), "UTF-8");
-                                        config.contains("-Daether.remoteRepositoryFilter.groupId=true") && config.contains("-Daether.remoteRepositoryFilter.groupId.basedir=") && config.contains("/.mvn/rrf")
+                                        java.util.List lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get("${maven.multiModuleProjectDirectory}", new String[] {".mvn", "rrf", "groupId-sonatype-snapshots.txt"}), java.nio.charset.StandardCharsets.UTF_8);
+                                        java.util.List groups = new java.util.ArrayList();
+                                        for (int i = 0; i < lines.size(); i++) { String line = ((String) lines.get(i)).trim(); if (line.length() > 0 && !line.startsWith("#")) { groups.add(line); } }
+                                        groups.size() == 1 && groups.get(0).equals("de.cuioss")
                                     ]]></condition>
-                                    <message>.mvn/maven.config must switch the group id filter on and point it at .mvn/rrf.</message>
+                                    <message>.mvn/rrf/groupId-sonatype-snapshots.txt must allow the group de.cuioss and nothing else.</message>
+                                </evaluateBeanshell>
+                                <!-- Whole lines, as Maven reads maven.config: one argument per line. The placeholder is put
+                                     together here so that it is compared as written and not interpolated. -->
+                                <evaluateBeanshell>
+                                    <condition><![CDATA[
+                                        java.util.List lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get("${maven.multiModuleProjectDirectory}", new String[] {".mvn", "maven.config"}), java.nio.charset.StandardCharsets.UTF_8);
+                                        java.util.Set options = new java.util.HashSet();
+                                        for (int i = 0; i < lines.size(); i++) { options.add(((String) lines.get(i)).trim()); }
+                                        options.contains("-Daether.remoteRepositoryFilter.groupId=true") && options.contains("-Daether.remoteRepositoryFilter.groupId.basedir=$" + "{session.rootDirectory}/.mvn/rrf/")
+                                    ]]></condition>
+                                    <message>.mvn/maven.config must hold the lines -Daether.remoteRepositoryFilter.groupId=true and -Daether.remoteRepositoryFilter.groupId.basedir=[session.rootDirectory]/.mvn/rrf/ (the placeholder written as a Maven expression).</message>
                                 </evaluateBeanshell>
                             </rules>
                         </configuration>
