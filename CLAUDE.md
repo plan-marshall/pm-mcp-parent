@@ -35,6 +35,14 @@ weakened without the user's explicit decision:
 - `central-publishing-maven-plugin` declared without its extension and with `skipPublishing`, because the cui parent
   would otherwise replace the deploy phase with a publish to Maven Central.
 
+The coordinates of the product come from the organisation registry, and no other repository is to be asked for
+them: the POM switches the Sonatype snapshot repository of the cui parent off, `.mvn/settings.xml` lists the registry
+before Maven Central, and the group id filter of Maven (`.mvn/rrf/`, switched on in `.mvn/maven.config`) lets the
+registry be asked for `de.planmarshall` only. The enforcer execution
+`product-coordinates-from-the-organisation-registry` fails the build of every repository whose `.mvn/` does not have
+that order and that filter. Not guaranteed: Maven Central is still asked for a coordinate of the product that the
+registry does not have, so the domain `planmarshall.de` of the group id must stay registered.
+
 No workflow receives a Sonatype or GPG credential. Only this parent is released; the release is the workflow
 `deploy.yml`, started by hand with the version.
 
