@@ -93,7 +93,7 @@
         <version.commonmark>0.30.0</version.commonmark>
         <version.lsp4j>1.0.0</version.lsp4j>
         <version.jgit>7.8.0.202609011348-r</version.jgit>
-        <version.native-maven-plugin>1.1.14</version.native-maven-plugin>
+        <version.native-maven-plugin>1.1.17</version.native-maven-plugin>
         <!-- Default empty argLine for JaCoCo compatibility - JaCoCo overrides it when active -->
         <argLine />
         <!-- Publishing to Maven Central is switched off for every module and every profile (see the
