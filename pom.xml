@@ -90,7 +90,7 @@
         <sonar.organization>plan-marshall</sonar.organization>
         <version.quarkus-mcp-server>2.0.2</version.quarkus-mcp-server>
         <version.picocli>4.7.7</version.picocli>
-        <version.commonmark>0.30.0</version.commonmark>
+        <version.commonmark>0.31.0</version.commonmark>
         <version.lsp4j>1.0.0</version.lsp4j>
         <version.jgit>7.8.0.202609011348-r</version.jgit>
         <version.native-maven-plugin>1.1.14</version.native-maven-plugin>
