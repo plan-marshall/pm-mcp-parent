@@ -58,7 +58,8 @@ No workflow receives a Sonatype or GPG credential. Only this parent is released;
 
 `main` is protected by rulesets and merges go through the merge queue; direct pushes to `main` are not allowed.
 Branch, commit, push, open a pull request, wait for the checks, answer and resolve every review comment. Do not
-enable auto-merge and do not merge without the user's word. Commits end with
+enable auto-merge. A run of `/plan-marshall` or of the runbook lane merges its own pull request once the process's
+gates hold and needs no further word of the user; outside those runs, do not merge without the user's word. Commits end with
 `Co-Authored-By: plan-marshall <noreply@cuioss.de>`.
 
 CI: reusable workflows of `cuioss/cuioss-organization`, pinned by full SHA with a version comment; configuration in
