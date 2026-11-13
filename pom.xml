@@ -222,7 +222,11 @@
                         <forkedProcessTimeoutInSeconds>0</forkedProcessTimeoutInSeconds>
                         <forkedProcessExitTimeoutInSeconds>60</forkedProcessExitTimeoutInSeconds>
                         <useSystemClassLoader>false</useSystemClassLoader>
-                        <reuseForks>false</reuseForks>
+                        <!-- One test JVM per module instead of one per test class. A fresh JVM per class made the
+                             pre-commit verify of pm-mcp-core take 650 s, of which about 79 % is the test phase; with one
+                             JVM per module it takes about 235 s (pm-mcp-core ADR 024). The integration tests below keep
+                             one JVM per class: each of them owns its process state. -->
+                        <reuseForks>true</reuseForks>
                     </configuration>
                 </plugin>
                 <plugin>
